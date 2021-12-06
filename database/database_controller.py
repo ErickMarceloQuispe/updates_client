@@ -22,7 +22,6 @@ def execute_sql_sentences(sql_sentences):
                 results.append(item)
         return results
     except sqlite3.IntegrityError as e:
-        return [str(e)]
         return ["Posible repetición de Primary Key"]
     except Exception as e:
         return [str(e)]
@@ -53,24 +52,5 @@ def run_downloaded():
                 (SELECT update_id from updates where status='Downloaded' ORDER BY created_at) ORDER BY sequence) ORDER BY sequence
         );"""))
     for item in sql_sentences:
-        execute_sql_sentences(item[0])
+        execute_sql_sentences(item[0].replace("`","'"))
     execute_sql_sentences("UPDATE updates SET status='Installed' WHERE status='Downloaded';")
-#TO CLIENT
-# def update_needs_query(date):
-#     sql_sentence="" 
-#     if(date!=None):
-#         sql_sentence="""select * from updates where created_at > %s order by created_at;
-#                     select * from updates order by created_at;"""%date
-#     else:
-#         sql_sentence="select * from updates order by created_at;"
-#     results=execute_sql_sentences([sql_sentence])
-#     print(results)
-
-# def get_build_sql_sentences(build_id):
-#     sql_sentence="""SELECT sql_sentence from sql_sentences where sql_sentence_id in 
-#                 (SELECT sql_sentence_id from build_sql_sentences where build_id = %s ORDER By sequence desc)"""%build_id
-#     results=execute_sql_sentences([sql_sentence])
-#     build_sql_sentences=[]
-#     for item in results:
-#         build_sql_sentences.append(item[0])
-#     return build_sql_sentences

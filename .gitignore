@@ -1,3 +1,4 @@
 */__pycache__
 connection/__pycache__
 database/__pycache__
+database/test_client.db
