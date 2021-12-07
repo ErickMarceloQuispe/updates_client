@@ -1,5 +1,10 @@
+#Consulta la existencia de la tabla 'updates'
 updates_exists="pragma table_info(updates)"
+
+#Obtiene la fecha de creación del ultimo 'update'
 get_last_update_date="select created_at from updates order by created_at desc limit 1"
+
+#Primer Build ejecutado al iniciar el cliente
 first_build=[
     """PRAGMA foreign_keys = ON;""",
     """DROP TABLE IF EXISTS build_sql_sentences;""",

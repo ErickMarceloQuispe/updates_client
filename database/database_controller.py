@@ -4,11 +4,13 @@ from connection.connection_controller import post_conn
 
 DB_NAME="database/test_client.db"
 
+#Convierte los bloques de SQL en un arreglo de sentencias sql individuales
 def process_sql_sentences(sql_sentences):
     if(type(sql_sentences)==str):
         sql_sentences=sql_sentences.split(";")
     return sql_sentences
 
+#Ejecuta el arreglo de sentencias sql y retorna los resultados de la ejecución
 def execute_sql_sentences(sql_sentences):
     try:
         sql_sentences=process_sql_sentences(sql_sentences)
@@ -29,7 +31,9 @@ def execute_sql_sentences(sql_sentences):
         conn.commit()
         conn.close
     
-
+#Configuración Inicial del Servidor:
+#Crea las tablas principales: Updates-Changes-SqlSentences)
+#Descarga e Instala los ultimos cambios
 def initial_config():
     exist_main_tables=execute_sql_sentences(InitSql.updates_exists)
     if(len(exist_main_tables)==0):
@@ -44,6 +48,7 @@ def initial_config():
         execute_sql_sentences(post_conn("http://localhost:5000/build-sql-date",{"last_update_date":date_query_res[0][0]}))
     run_downloaded()
 
+#Ejecuta todas las actualizaciones Descargadas y cambia su estado a Instaladas
 def run_downloaded():
     sql_sentences=(execute_sql_sentences("""
     SELECT sql_sentence FROM sql_sentences where sql_sentence_id in 
