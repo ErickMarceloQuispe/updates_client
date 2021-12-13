@@ -4,48 +4,63 @@ from connection.connection_controller import post_conn
 
 DB_NAME="database/test_client.db"
 
-#Convierte los bloques de SQL en un arreglo de sentencias sql individuales
-def process_sql_sentences(sql_sentences):
+#Convierte los bloques de SQL en un arreglo de sentencias sql individuales usando como divisor ';\n'
+def dividir_sql_sentences(sql_sentences):
     if(type(sql_sentences)==str):
-        sql_sentences=sql_sentences.split(";")
+        sql_sentences=sql_sentences.split(";\n")
     return sql_sentences
 
-#Ejecuta el arreglo de sentencias sql y retorna los resultados de la ejecución
-def execute_sql_sentences(sql_sentences):
+#Transforma los simbolos especiales usados en muchas sentencias dentro de otras a simbolos compatibles con SQL
+def tranform_symbols(sql_sentence):
+    sql_sentence=sql_sentence.replace("`","'")
+    sql_sentence=sql_sentence.replace(";",";\n")
+    return sql_sentence
+
+#Ejecuta una sentencia sql (la divide por defecto) y retorna los resultados de la ejecución
+def execute_sql_sentences(sql_sentences,dividir=True):
     try:
-        sql_sentences=process_sql_sentences(sql_sentences)
+        if(dividir):
+            sql_sentences=dividir_sql_sentences(sql_sentences)
+        else:
+            sql_sentences=[sql_sentences]
         conn = sqlite3.connect(DB_NAME)
         c=conn.cursor()
         results=[]
         for sql_sentence in sql_sentences:
-            print(sql_sentence)
             c.execute(sql_sentence)
             for item in c.fetchall():
                 results.append(item)
         return results
-    except sqlite3.IntegrityError as e:
+    except sqlite3.IntegrityError:
         return ["Posible repetición de Primary Key"]
     except Exception as e:
+        print(e)
         return [str(e)]
     finally:
         conn.commit()
         conn.close
     
-#Configuración Inicial del Servidor:
-#Crea las tablas principales: Updates-Changes-SqlSentences)
+#Configuración Inicial del Cliente:
+#Crea las tablas principales: Updates-Changes-SqlSentences
 #Descarga e Instala los ultimos cambios
 def initial_config():
     exist_main_tables=execute_sql_sentences(InitSql.updates_exists)
     if(len(exist_main_tables)==0):
         execute_sql_sentences(InitSql.first_build)
-        execute_sql_sentences(post_conn("http://localhost:5000/build-sql-id",{"build_id":1}))
+        query_arr=post_conn("http://localhost:5000/build-sql-id",{"build_id":1})
+        for query in query_arr:
+            execute_sql_sentences(query)
     date_query_res=execute_sql_sentences(InitSql.get_last_update_date)
     print("fecha: "+str (date_query_res) )
     if(date_query_res==[]):
-        print(execute_sql_sentences("INSERT INTO builds(description) VALUES ('Dummy Build')"))
-        print(execute_sql_sentences (post_conn("http://localhost:5000/build-sql-date",{"last_update_date":"2000-01-01 00:00:00"})) )
+        execute_sql_sentences("INSERT INTO builds(description) VALUES ('Dummy Build')")
+        query_arr=post_conn("http://localhost:5000/build-sql-date",{"last_update_date":"2000-01-01 00:00:00"})
+        for query in query_arr:
+            execute_sql_sentences(query)
     else:
-        execute_sql_sentences(post_conn("http://localhost:5000/build-sql-date",{"last_update_date":date_query_res[0][0]}))
+        query_arr=post_conn("http://localhost:5000/build-sql-date",{"last_update_date":date_query_res[0][0]})
+        for query in query_arr:
+            execute_sql_sentences(query)
     run_downloaded()
 
 #Ejecuta todas las actualizaciones Descargadas y cambia su estado a Instaladas
@@ -57,5 +72,7 @@ def run_downloaded():
                 (SELECT update_id from updates where status='Downloaded' ORDER BY created_at) ORDER BY sequence) ORDER BY sequence
         );"""))
     for item in sql_sentences:
-        execute_sql_sentences(item[0].replace("`","'"))
+        aux=tranform_symbols(item[0])
+        print(aux)
+        execute_sql_sentences(aux)
     execute_sql_sentences("UPDATE updates SET status='Installed' WHERE status='Downloaded';")
