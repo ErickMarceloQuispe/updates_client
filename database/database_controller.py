@@ -4,18 +4,19 @@ from connection.connection_controller import post_conn
 
 DB_NAME="database/test_client.db"
 
-#Convierte los bloques de SQL en un arreglo de sentencias sql individuales
+#Convierte los bloques de SQL en un arreglo de sentencias sql individuales usando como divisor ';\n'
 def dividir_sql_sentences(sql_sentences):
     if(type(sql_sentences)==str):
         sql_sentences=sql_sentences.split(";\n")
     return sql_sentences
 
+#Transforma los simbolos especiales usados en muchas sentencias dentro de otras a simbolos compatibles con SQL
 def tranform_symbols(sql_sentence):
     sql_sentence=sql_sentence.replace("`","'")
     sql_sentence=sql_sentence.replace(";",";\n")
     return sql_sentence
 
-#Ejecuta el arreglo de sentencias sql y retorna los resultados de la ejecución
+#Ejecuta una sentencia sql (la divide por defecto) y retorna los resultados de la ejecución
 def execute_sql_sentences(sql_sentences,dividir=True):
     try:
         if(dividir):
@@ -40,7 +41,7 @@ def execute_sql_sentences(sql_sentences,dividir=True):
         conn.close
     
 #Configuración Inicial del Cliente:
-#Crea las tablas principales: Updates-Changes-SqlSentences)
+#Crea las tablas principales: Updates-Changes-SqlSentences
 #Descarga e Instala los ultimos cambios
 def initial_config():
     exist_main_tables=execute_sql_sentences(InitSql.updates_exists)
